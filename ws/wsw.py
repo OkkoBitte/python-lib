@@ -1,4 +1,4 @@
-# WEB SNIFF WORM 1.0 [MBG]
+# WEB SNIFF WORM 1.2 [MBG]
 
 import requests as     net
 import re as           t_parse
@@ -8,13 +8,13 @@ import sys as          system
 from .ww import        main
 def vanih(CELEM,VAH):
     if CELEM == "TEXT":
-        main(VAH,want=['link'],pathss=['/dev/null','/dev/null','links.html'])
+        main(VAH,ss='1',want=['link','other'],pathss=['/dev/null','/dev/null','links.html'])
     elif CELEM == "IMG":
-        main(VAH,want=['photo'],pathss=['photo.html','/dev/null','/dev/null'])
+        main(VAH,ss='1',want=['photo','other'],pathss=['photo.html','/dev/null','/dev/null'])
     elif CELEM == "VIDEO":
-        main(VAH,want=['video'],pathss=['/dev/null','video.html','/dev/null'])
+        main(VAH,ss='1',want=['video','other'],pathss=['/dev/null','video.html','/dev/null'])
     else:
-        main(VAH,ss='1',want=['photo','video','link'])
+        main(VAH,ss='1',want=['photo','video','link','other'])
         
     
 

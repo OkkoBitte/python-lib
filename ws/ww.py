@@ -1,19 +1,14 @@
-# WEB WORM 2.0 [MBG]
+# WEB WORM 2.1 [MBG]
 
 import os
 import requests
 import sys
 import re
 import urllib.parse
+from urllib.parse import urljoin
 import os
 from  .nwf import nwf
-# class nwf:
-#     def new_file(name,w):
-#         with open(name,"w") as f:f.write(w)
-#     def at_file(name,w):
-#         with open(name,"a+") as f:f.write(w)
 
-#     ### v2.4
 
 class path:
     p1={
@@ -61,8 +56,10 @@ class path:
     p9=None # USED FOR LINKS
     p10="links.html"
     p11=['link','video','photo','other'] # USED FOR WANT TYPE
-    p12=None
-
+    p12=None # USED THIS LINK
+    p13 = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.svg']
+    p14 = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.mpg', '.mpeg', '.m4v']
+    p15 = ['.js', '.css', '.json', '.xml', '.html', '.txt', '.csv', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.zip', '.rar', '.gz', '.tar']
     class search_service:
         google_search_link="https://www.google.com/search?q="
         bing_search_link="https://www.bing.com/search?q="
@@ -78,15 +75,42 @@ class path:
         arxiv_search_link="https://arxiv.org/search/?query="
         shodan_search_link="https://www.shodan.io/search?query="
 
-    def extract_links(text,tep):
-        links = re.findall(r'https?://(?:www\.)?[\w\d\-._]+(?:\.[\w\d\-._]+)+[\w\d\-\._\:\/\?\#\[\]\@\!\$\%\^\&\*\(\)\+\,\;\:\.\~\|\/\?\#]*', text)
+    def extract_links(text,tep, sourc = None):
+        
+
+        
+        links:list = []
+        
+        absolute_links = re.findall(r'https?://(?:www\.)?[\w\d\-._]+(?:\.[\w\d\-._]+)+[\w\d\-\._\:\/\?\#\[\]\@\!\$\%\^\&\*\(\)\+\,\;\:\.\~\|\/\?\#]*', text)
+        links.extend(absolute_links)
+
+        if sourc is not None:
+           
+            relative_patterns = [
+                r'href="(/[^"]*)"',      
+                r'href="(\./[^"]*)"',      
+                r'href="([^"#?:]*)"',    
+                r'src="(/[^"]*)"',       
+                r'src="(\./[^"]*)"',     
+                r'src="([^"#?:]*)"' 
+            ]
+            
+            for pattern in relative_patterns:
+                found_links = re.findall(pattern, text)
+                for rel_link in found_links:
+                
+                    if rel_link and not rel_link.startswith('#') and not rel_link.startswith('javascript:'):
+                 
+                        full_url = urljoin(sourc, rel_link)
+                        if full_url not in links: 
+                            links.append(full_url)
         
         for link in links:
             link = link.split('&amp;')[0]           
             link = urllib.parse.unquote(link) 
             extension = os.path.splitext(link)[1].lower()
 
-            if extension in ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.svg'] and 'photo' in path.p11: #, '.gif'
+            if extension in path.p13 and 'photo' in path.p11: #, '.gif'
                 ph_html=f'<img src="{link}" style ="max-width: 200px; height: auto;position:releative;max-height:500px">'
                 
                 if tep == 1:
@@ -101,7 +125,7 @@ class path:
                     if link not in path.p1["images"] and link not in path.p2["images"] and link not in path.p5["images"]:
                         path.p5["images"].append(link)
                         nwf.at_file(path.p3,ph_html)
-            elif extension in ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.mpg', '.mpeg', '.m4v'] and 'video' in path.p11:
+            elif extension in path.p14 and 'video' in path.p11:
                 video_html = f'<video width="320" height="240" controls><source src="{link}" type="video/mp4">Your browser does not support the video tag.</video>'
                 
                 if tep == 1:
@@ -116,7 +140,7 @@ class path:
                     if link not in path.p5["videos"] and link not in path.p2["videos"] and link not in path.p5["videos"]:
                         path.p5["videos"].append(link)
                         nwf.at_file(path.p4, video_html)
-            elif extension in ['.js', '.css', '.json', '.xml', '.html', '.txt', '.csv', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.zip', '.rar', '.gz', '.tar'] and 'sys' in path.p11:
+            elif extension in path.p15 and 'sys' in path.p11:
                 if tep == 1:
                     if link not in path.p1["system_files"]:
                         path.p1["system_files"].append(link)
@@ -181,6 +205,7 @@ def main(obj,ss='google',aggressive=0,want=['photo'],pathss = ['photo.html','vid
             text_restText=requests.get(f'{obj}',timeout=path.p7).text
             print(f'USE :: {obj}')
             path.p9=obj
+            path.p12 = obj
         except:
             print(f'ERR :: {obj}')
             sys.exit()
@@ -188,66 +213,79 @@ def main(obj,ss='google',aggressive=0,want=['photo'],pathss = ['photo.html','vid
         try:
             text_restText=requests.get(f'{path.search_service.google_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.google_search_link}{obj}')
+            path.p12 = path.search_service.google_search_link
         except:text_restText=""
     elif  ss=='bing':
         try:
             text_restText=requests.get(f'{path.search_service.bing_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.bing_search_link}{obj}')
+            path.p12 = path.search_service.bing_search_link
         except:text_restText=""
     elif ss=='yahoo':
         try:
             text_restText=requests.get(f'{path.search_service.yahoo_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.yahoo_search_link}{obj}')
+            path.p12 = path.search_service.yahoo_search_link
         except:text_restText=""
     elif ss=='duckduckgo':
         try:
             text_restText=requests.get(f'{path.search_service.duckduckgo_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.duckduckgo_search_link}{obj}')
+            path.p12 =path.search_service.duckduckgo_search_link
         except:text_restText=""
     elif ss=='ecosia':
         try:
             text_restText=requests.get(f'{path.search_service.ecosia_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.ecosia_search_link}{obj}')
+            path.p12 =path.search_service.ecosia_search_link
         except:text_restText=""
     elif ss=='ask':
         try:
             text_restText=requests.get(f'{path.search_service.ask_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.ask_search_link}{obj}')
+            path.p12 =path.search_service.ask_search_link
         except:text_restText=""
     elif ss=='aol':
         try:
             text_restText=requests.get(f'{path.search_service.aol_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.aol_search_link}{obj}')
+            path.p12 =path.search_service.aol_search_link
         except:text_restText=""
     elif ss=='yandex':
         try:
             text_restText=requests.get(f'{path.search_service.yandex_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.yandex_search_link}{obj}')
+            path.p12 =path.search_service.yandex_search_link
         except:text_restText=""
     elif ss=='baidu':
         try:
             text_restText=requests.get(f'{path.search_service.baidu_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.baidu_search_link}{obj}')
+            path.p12 =path.search_service.baidu_search_link
         except:text_restText=""
     elif ss=='wolfram':
         try:
             text_restText=requests.get(f'{path.search_service.wolfram_alpha_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.wolfram_alpha_search_link}{obj}')
+            path.p12 =path.search_service.wolfram_alpha_search_link
         except:text_restText=""
     elif ss=='pubmed':
         try:
             text_restText=requests.get(f'{path.search_service.pubmed_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.pubmed_search_link}{obj}')
+            path.p12 =path.search_service.pubmed_search_link
         except:text_restText=""
     elif ss=='arxiv':
         try:
             text_restText=requests.get(f'{path.search_service.arxiv_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.arxiv_search_link}{obj}')
+            path.p12 =path.search_service.arxiv_search_link
         except:text_restText=""
     elif ss=='shodan':
         try:
             text_restText=requests.get(f'{path.search_service.shodan_search_link}{obj}',timeout=path.p7).text
             print(f'USE :: {path.search_service.shodan_search_link}{obj}')
+            path.p12 =path.search_service.shodan_search_link
         except:text_restText=""
     
     else:
@@ -278,14 +316,14 @@ def main(obj,ss='google',aggressive=0,want=['photo'],pathss = ['photo.html','vid
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     for link_other in  path.p1["other"]:
-        
+        path.p12 = link_other
         try:
             response = requests.get(link_other,timeout=path.p6)
             response.raise_for_status() 
             
             if response.status_code == 200:
                 print(f"USE == {link_other}")
-                link_other=path.extract_links(response.text,2)
+                link_other=path.extract_links(response.text,2, sourc=link_other)
             
 
         except requests.exceptions.RequestException as e:
@@ -301,7 +339,7 @@ def main(obj,ss='google',aggressive=0,want=['photo'],pathss = ['photo.html','vid
                 
                 if response.status_code == 200:
                     print(f"USE *== {link_other5}")
-                    link_other5=path.extract_links(response.text,5)
+                    link_other5=path.extract_links(response.text,5,sourc=link_other5)
                 
 
             except requests.exceptions.RequestException as e:
